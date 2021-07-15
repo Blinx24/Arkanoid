@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>Arkanoid</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            /* Creación de una fuente personalizada */
+            /* Fuentes obtenidas de dafont.com */
+            @font-face{
+                font-family: "Arcade";
+                src: url("ARCADECLASSIC.TTF") format("truetype");
+            }
+            
+            @font-face{
+                font-family: "Pixel Digivolve";
+                src: url("Pixel Digivolve.otf") format("truetype");
+            }
+            
+            /* Estilos aplicados a todo el cuerpo */ 
+            body{
+                /* Márgenes de la página */
+                margin-top: 100px;
+                margin-right: 40px;
+                margin-bottom: 10px;
+                margin-left: 70px;
+                /* Color de fondo */
+                background-color: #000000;
+                color: white;
+            }
+            
+            /* Estilos de las clases de las etiquetas div */ 
+            div.authors{
+                /* Fuente usada */
+                font-family: Courier New;
+                /* Tamaño de la fuente */
+                font-size: 10pt;
+            }
+            
+            div.title{  
+                font-family: Pixel Digivolve;
+                font-size: 60pt;
+                /* Alineación del texto */
+                text-align: center;
+            }
+            
+            div.information{
+                font-family: Arcade;
+                font-size: 16px;
+                /* Alineación del texto */
+                text-align: left;
+            }
+            
+            div.end{
+                font-family: Arcade;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Autores de la práctica - Estructurado mediante una lista -->
+        <div class="authors">
+            <p>Autores:</p>
+            <ul>
+                <li>Ignacio Calles Quintero / 49088196D</li>
+                <li>Antonio Rafael Ruano Rodríguez / 49109000K</li>
+            </ul>
+            <p>Fecha entrega: 04/01/2020</p>
+            <p>
+                Webgrafía:
+                <a href="https://www.sounds-resource.com/nes/arkanoid/sound/3698/" target="_blank">Sonidos I</a>,
+                <a href="https://www.youtube.com/watch?v=gSthAyDbrjg" target="_blank">Sonidos II</a>
+            </p>
+        </div>
+        <br>
+        <div class="title" style="color: blue;">
+            ARKANOID <span style="color: red; font-size: 48px;">BY TONACHO</span>
+        </div>
+        <div class="information" style="text-align: center">
+            <p id="1P">
+                > 1 jugador
+            </p>
+            <p id="2P">
+                2 jugadores
+            </p>
+            <p id="infoGameModes">
+                Pulsa w/s para moverte y Enter para seleccionar modo
+            </p>
+        </div>
+        <!-- Juego Arkanoid -->
+        <div style="text-align: center">
+            <table>
+                <tr>
+                    <!-- Juego -->
+                    <td>
+                        <canvas id="canvas" style="border:1px solid #000000;" width="400" height="600">Canvas not supported</canvas>
+                    </td>
+                    <!-- Información de la partida -->
+                    <td>
+                        <div class="information">
+                            <p id="intEnd" onkeypress="frame = setInterval(game, intervalTime)"></p>
+                            <p id="player"></p>
+                        </div>
+                        <canvas id="canvas2" width="400" height="20">Canvas not supported</canvas>
+                        <div class="information">
+                            <div id="introPoints" style="color: red"></div><br>
+                            <div  id="playerPoints"></div><br>
+                            <br>
+                            <p id="world"></p>
+                            <div id="introBlocks" style="color: red"></div><br>
+                            <div id="totalBlocks"></div><br>
+                            <div id="introDif" style="color: red"></div><br>
+                            <div id="difficulty"></div>
+                            <!-- Audios insertados en el juego -->
+                            <audio id="snd1">
+                                <source src="hit.wav">
+                            </audio>
+                            <audio id="snd2">
+                                <source src="destroyBlock.wav">
+                            </audio>
+                            <audio id="snd3">
+                                <source src="hitStrongBlock.wav">
+                            </audio>
+                            <audio id="snd4">
+                                <source src="destroyBall.wav">
+                            </audio>
+                            <audio id="snd5">
+                                <source src="menu.mp3">
+                            </audio>
+                            <audio id="snd6">
+                                <source src="startRound.mp3">
+                            </audio>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <script type="text/javascript">
+            'use strict';
+            //////////////////// VARIABLES GENERALES ////////////////////
+            //- Canvas -//
+            var canvas = document.getElementById("canvas");     //Canvas
+            var canvas2 = document.getElementById("canvas2");
+            var context = canvas.getContext("2d");              //Contexto 2D del canvas
+            var contextInfo = canvas2.getContext("2d");
+            
+            //- Imágenes -//
+            var background = new Image();       //Imagen del fondo
+            var upperLimit = new Image();       //Imagen del límite superior
+            var leftLimit = new Image();        //Imagen del límite izquierdo
+            var rightLimit = new Image();       //Imagen del límite derecho
+            var imagePlayer = new Image();      //Imagen del jugador
+            var live = new Image();             //Imágenes para las vidas
+            var live2 = new Image();
+            var live3 = new Image();
+            var imageBall = new Image();        //Imagen de la pelota
+            
+            //- Jugador -//
+            var ball;       //Futura instancia de la pelota
+            var player;     //Futura instancia del jugador
+            
+            //- Partida -//
+            var time = 0;                       //Tiempo de juego
+            var deltaTime = 1.0;                //Tiempo para el movimiento de la pelota        
+            var intervalTime = 1000 / 60;              //Tiempo para el intervalo
+            var movementStarted = false;        //Booleano para el movimiento inicial
+            var frame;                          //Variable para ejecutar una función después de un tiempo
+            var endedGame = false;              //Booleano que indica si acabó el juego
+            var player1 = true;                 //Booleanos para indicar el modo de juego
+            var player2 = false;
+            
+            //- Bloques -//
+            const NUMBER_LIMITS = 3;                            //Número de límites del mapa
+            var sceneLimits = [];                               //Array de bloques límite
+            const ROWS = 6;                                     //Filas de bloques destruibles
+            const COLUMNS = 10;                                 //Columnas de bloques destruibles
+            var totalBlocks = 60;                               //Número total de bloques destruibles
+            var breakableBlocks = new Array(totalBlocks);       //Array de bloques destruibles
+            
+            //- Texto -//
+            var mode1P = document.getElementById("1P");
+            var mode2P = document.getElementById("2P");
+            var infoGM = document.getElementById("infoGameModes");
+            var textPlayer = document.getElementById("player");
+            var textWorld = document.getElementById("world");
+            var points = document.getElementById("playerPoints");   
+            var iPoints = document.getElementById("introPoints");
+            var blocks = document.getElementById("totalBlocks");    
+            var iBlocks = document.getElementById("introBlocks");
+            var introAndEnd = document.getElementById("intEnd");
+            var iDifficulty = document.getElementById("introDif");
+            var difficulty = document.getElementById("difficulty");
+            
+            //- Sonidos -//
+            var hitSound = document.getElementById("snd1");
+            var destroyBlockSound = document.getElementById("snd2");
+            var hitSBSound = document.getElementById("snd3");
+            var destroyBallSound = document.getElementById("snd4");
+            var menuMusic = document.getElementById("snd5");
+            var roundMusic = document.getElementById("snd6");
+
+            //////////////////// CLASES ////////////////////
+            //Pelota
+            class Ball{
+                //Constructor
+                constructor(x, y, s){
+                    this.x = x;
+                    this.y = y;
+                    this.speedX = 0.0;
+                    this.speedY = 0.0;
+                    this.size = s;
+                }
+                
+                //Getters
+                getX(){
+                    return this.x;
+                }
+                
+                getY(){
+                    return this.y;
+                }
+                
+                getSpeedX() {
+                    return this.speedX;
+                }
+                
+                getSpeedY() {
+                    return this.speedY;
+                }
+                
+                getSize(){
+                    return this.size;
+                }
+                
+                //Setters
+                setX(x) {
+                    this.x = x;
+                }
+    
+                setY(y) {
+                    this.y = y;
+                }
+                
+                setSpeedX(sX) {
+                    this.speedX = sX;
+                }
+                
+                setSpeedY(sY) {
+                    this.speedY = sY;
+                }
+            }
+            
+            //Jugador
+            class Player{
+                //Constructor
+                constructor(x, y, w, h){
+                    this.x = x;
+                    this.y = y;
+                    this.width = w;
+                    this.height = h;
+                    this.lives = 3;
+                    this.points = 0;
+                }
+    
+                //Getters
+                getX() {
+                    return this.x;
+                }
+                
+                getY() {
+                    return this.y;
+                }
+                
+                getWidth() {
+                    return this.width;
+                }
+                
+                getHeight() {
+                    return this.height;
+                }
+                
+                getLives() {
+                    return this.lives;
+                }
+                
+                getPoints() {
+                    return this.points;
+                }
+                
+                //Setters
+                setX(x) {
+                    this.x = x;
+                }
+                
+                setY(y) {
+                    this.y = y;
+                }
+                
+                setLives(l) {
+                    this.lives = l;
+                }
+                
+                setPoints(p) {
+                    this.points = p;
+                }
+            }
+
+            //Bloque
+            class Block{
+                //Constructor
+                constructor(x, y, w, h){
+                    this.x = x;
+                    this.y = y;
+                    this.width = w;
+                    this.height = h;
+                }
+    
+                //Getters
+                getX() {
+                    return this.x;
+                }
+                
+                getY() {
+                    return this.y;
+                }
+                
+                getWidth() {
+                    return this.width;
+                }
+                
+                getHeight() {
+                    return this.height;
+                }
+            }
+            
+            //Bloques destruibles (por herencia de la clase Block)
+            class removableBlock extends Block{
+                //Constructor
+                constructor(x, y, w, h, hl, c){
+                    super(x, y, w, h);
+                    this.health = hl;
+                    this.color = c;
+                }
+                
+                //Getters
+                getHealth() {
+                    return this.health;
+                }
+                
+                getColor() {
+                    return this.color;
+                }
+                
+                //Setters
+                setHealth(h) {
+                    this.health = h;
+                }
+            }
+            
+            //////////////////// FUNCIONES AUXILIARES DE CREACIÓN ////////////////////
+            //Carga de imágenes en en lienzo del juego
+            function loadImages(img, nameImg, x, y, w, h){
+                //Asignación de la fuente de la imagen
+                img.src = nameImg;
+                
+                //Dibujado de la imagen solo cuando esté cargada
+                img.onload = function(){
+                    context.drawImage(img, x, y, w, h);
+                };
+            }
+            
+            //Carga de imágenes en el lienzo de la información
+            function loadImagesOnInfo(img, nameImg, x, y, w, h){
+                //Asignación de la fuente de la imagen
+                img.src = nameImg;
+                
+                //Dibujado de la imagen solo cuando esté cargada
+                img.onload = function(){
+                    contextInfo.drawImage(img, x, y, w, h);
+                };
+            }
+            
+            //Creación de límites
+            function createSceneLimits(){
+                //Límite superior
+                //Creación del objeto
+                var upL = new Block(0,0,400,10);
+                
+                //Inserción del objeto en el array
+                sceneLimits[0] = upL;
+                
+                //Impresión del borde en el lienzo
+                loadImages(upperLimit, "upL.png", upL.getX(), upL.getY(), upL.getWidth(), upL.getHeight());
+                
+                //Límite izquierdo (mismo proceso)
+                var leftL = new Block(0, 10, 10, 590);
+                
+                sceneLimits[1] = leftL;
+                
+                loadImages(leftLimit, "leftL.png", leftL.getX(), leftL.getY(), leftL.getWidth(), leftL.getHeight());
+                
+                //Límite izquierdo (mismo proceso)
+                var rightL = new Block(390, 10, 10, 590);
+                
+                sceneLimits[2] = rightL;
+                
+                loadImages(rightLimit, "rightL.png", rightL.getX(), rightL.getY(), rightL.getWidth(), rightL.getHeight());
+            }
+            
+            //Creación de bloques destruibles
+            function createBlocks(){
+                //Posición inicial donde empezar a pintar los bloques destruibles
+                var posX = 10;
+                var posY = 90;
+                
+                //Índice inicial para insertar en array
+                var idx = 0;
+                
+                //Array de creación de bloques destruibles
+                for (var i = 0; i < ROWS; i++) {
+                    for (var j = 0; j < COLUMNS; j++) {
+                        switch(i){
+                            //Fila 1
+                            case 0:
+                                //Creación del bloque
+                                var strongBlock = new removableBlock(posX, posY, 38, 19, 2, "gray");
+                                
+                                //Inserción en el array de bloques
+                                breakableBlocks[idx] = strongBlock;
+                                
+                                //Dibujado con el color asignado en la creación
+                                context.fillStyle = strongBlock.getColor();
+                                context.fillRect(strongBlock.getX(), strongBlock.getY(), strongBlock.getWidth(), strongBlock.getHeight());
+                                
+                                //Creación de un borde para el rectángulo con color negro
+                                context.fillStyle = "black";
+                                context.strokeRect(strongBlock.getX(), strongBlock.getY(), strongBlock.getWidth(), strongBlock.getHeight());
+                                
+                                break;
+                            //Fila 2 (misma mecánica que la primera fila)
+                            case 1:
+                                var normalBlock = new removableBlock(posX, posY, 38, 19, 1, "red");
+                            
+                                breakableBlocks[idx] = normalBlock;
+                            
+                                context.fillStyle = normalBlock.getColor();
+                                context.fillRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                context.fillStyle = "black";
+                                context.strokeRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                break;
+                            //Fila 3 (misma mecánica que la primera fila)
+                            case 2:
+                                var normalBlock = new removableBlock(posX, posY, 38, 19, 1, "yellow");
+                            
+                                breakableBlocks[idx] = normalBlock;
+                            
+                                context.fillStyle = normalBlock.getColor();
+                                context.fillRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                context.fillStyle = "black";
+                                context.strokeRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());                                
+                                
+                                break;
+                            //Fila 4 (misma mecánica que la primera fila)
+                            case 3:
+                                var normalBlock = new removableBlock(posX, posY, 38, 19, 1, "cornflowerblue");
+                            
+                                breakableBlocks[idx] = normalBlock;
+                            
+                                context.fillStyle = normalBlock.getColor();
+                                context.fillRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                context.fillStyle = "black";
+                                context.strokeRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+
+                                break;
+                            //Fila 5 (misma mecánica que la primera fila)
+                            case 4:
+                                var normalBlock = new removableBlock(posX, posY, 38, 19, 1, "pink");
+                            
+                                breakableBlocks[idx] = normalBlock;
+                            
+                                context.fillStyle = normalBlock.getColor();
+                                context.fillRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                context.fillStyle = "black";
+                                context.strokeRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+
+                                break;
+                            //Fila 6 (misma mecánica que la primera fila)
+                            case 5:
+                                var normalBlock = new removableBlock(posX, posY, 38, 19, 1, "green");
+                            
+                                breakableBlocks[idx] = normalBlock;
+                            
+                                context.fillStyle = normalBlock.getColor();
+                                context.fillRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+                                
+                                context.fillStyle = "black";
+                                context.strokeRect(normalBlock.getX(), normalBlock.getY(), normalBlock.getWidth(), normalBlock.getHeight());
+
+                                break;
+                        }
+                        //Avanzamos al siguiente bloque de la fila
+                        posX += 38;
+                        
+                        //Siguiente posición del array
+                        idx++;
+                    }
+                    //Avanzamos a la siguiente fila de bloques
+                    posX = 10;
+                    posY += 19;
+                }
+                
+            }
+            
+            //Creación del jugador y la pelota
+            function createPlayer(){
+                //Jugador
+                //Inicialización del objeto
+                player = new Player(170, 553, 60, 15);
+                
+                //Carga de la imagen del jugador
+                loadImages(imagePlayer, "player.png", player.getX(), player.getY(), player.getWidth(), player.getHeight());
+                
+                //Pelota (mismo procedimiento)
+                ball = new Ball(194, 539, 12);
+                loadImages(imageBall, "ball.png", ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                
+            }
+            
+            //Crear la información de la partida
+            function initInformation() {
+                //Inicio de la ejecución del intervalo (texto)
+                introAndEnd.innerHTML = "Pulsa ENTER para empezar la partida";
+                
+                //Información del jugador
+                textPlayer.innerHTML = "//// JUGADOR ////";
+                //Vida
+                //Parámetros auxilares para colocar las vidas
+                var x = 0;
+                var y = 8;
+                var w = 30;
+                var h = 10;
+                //Carga de imágenes
+                loadImagesOnInfo(live, "player.png", x, y, w, h);
+                loadImagesOnInfo(live2, "player.png", x + w + 10, y, w, h);
+                loadImagesOnInfo(live3, "player.png", x + (w * 2) + (10 * 2), y, w, h);
+                //Puntos
+                iPoints.innerHTML = "Puntos: ";
+                points.innerHTML = player.getPoints();
+                
+                //Información del mundo
+                textWorld.innerHTML = "//// MUNDO ////";
+                //Bloques por destruir
+                iBlocks.innerHTML = "Bloques por romper: ";
+                blocks.innerHTML = totalBlocks;
+                //Dificultad progresiva
+                iDifficulty.innerHTML = "Dificultad: ";
+                difficulty.innerHTML = deltaTime;
+            }
+            
+            //////////////////// FUNCIONES AUXILIARES DE LA PARTIDA ////////////////////
+            //Selección del movimiento inicial de la pelota
+            function startMovement(){
+                //Selección aleatoria de un índice para la dirección
+                var idx = Math.round(Math.random() * 1);
+                
+                //Ajuste de las velocidades según el índice
+                switch(idx){
+                    case 0:
+                        ball.setSpeedX(-1.0);
+                        ball.setSpeedY(-1.0);
+                        break;
+                    case 1:
+                        ball.setSpeedX(1.0);
+                        ball.setSpeedY(-1.0);
+                        break;
+                }
+                
+                //Devolución de verdadero tras completar el proceso
+                return true;
+            }
+            
+            //Actualización de la posición de la pelota
+            function updateBall() {
+                //Limpiado del lienzo
+                context.clearRect(ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                    
+                //Actualización de la posición (MRU)
+                ball.setX(ball.getX() + ball.getSpeedX() * deltaTime);
+                ball.setY(ball.getY() + ball.getSpeedY() * deltaTime);
+                    
+                //Redibujado de la pelota
+                loadImages(imageBall, "ball.png", ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+            }
+                
+            //Colisión con los límites
+            function collisionWithLimits(xP, yP, xM, yM) {
+                //Bucle para recorrer el array de límites
+                for (var iL = 0; iL < NUMBER_LIMITS; iL++) {
+                    //Lados de los límites
+                    var limitXM = sceneLimits[iL].getX() - 4;
+                    var limitXP = sceneLimits[iL].getX() + sceneLimits[iL].getWidth() + 4;
+                    var limitYM = sceneLimits[iL].getY() - 4;
+                    var limitYP = sceneLimits[iL].getY() + sceneLimits[iL].getHeight() + 4;
+                    
+                    //Condición para la colisión
+                    if(xM < limitXP && yM < limitYP && xP > limitXM && yP > limitYM){
+                        //Cálculo de las distancias para comprobar en que parte del objeto colisiona
+                        var distXP = Math.abs((limitXP - xM));
+                        var distYP = Math.abs((limitYP - yM));
+                        var distXM = Math.abs((limitXM - xP));
+                        var distYM = Math.abs((limitYM - yP));
+                        
+                        //Cambio de dirección en función de las distancias calculadas
+                        if(distXP < distYP && distXP < distXM && distXP < distYM)
+                            ball.setSpeedX(ball.getSpeedX() * -1.0);
+                        if(distXM < distYP && distXM < distXP && distXM < distYM)
+                            ball.setSpeedX(ball.getSpeedX() * -1.0);
+                        if(distYP < distXP && distYP < distXM && distYP < distYM)
+                            ball.setSpeedY(ball.getSpeedY() * -1.0);
+                        if(distYM < distYP && distYM < distXM && distYM < distXP)
+                            ball.setSpeedY(ball.getSpeedY() * -1.0);
+                    }
+                }
+            }
+            
+            //Colisión con el jugador
+            function collisionWithPlayer(xP, yP, xM, yM) {
+                //Lados del rectángulo jugador
+                var playerXM = player.getX() - 3;
+                var playerXP = player.getX() + player.getWidth() + 3;
+                var playerYM = player.getY() - 3;
+                var playerYP = player.getY() + player.getHeight() + 3;
+                
+                //Condición para la colisión
+                if(xM < playerXP && yM < playerYP && xP > playerXM && yP > playerYM){
+                    //Reproducción de sonido
+                    hitSound.play();
+                    
+                    //Cálculo de las distancias para comprobar en que parte del objeto colisiona
+                    var distXP = Math.abs((playerXP - xM));
+                    var distYP = Math.abs((playerYP - yM));
+                    var distXM = Math.abs((playerXM - xP));
+                    var distYM = Math.abs((playerYM - yP));
+                        
+                    //Cambio de dirección en función de las distancias calculadas
+                    if(distXP < distYP && distXP < distXM && distXP < distYM)
+                        ball.setSpeedX(ball.getSpeedX() * -1.0);
+                    else if(distXM < distYP && distXM < distXP && distXM < distYM)
+                        ball.setSpeedX(ball.getSpeedX() * -1.0);
+                    else if(distYP < distXP && distYP < distXM && distYP < distYM)
+                        ball.setSpeedY(ball.getSpeedY() * -1.0);
+                    else if(distYM < distYP && distYM < distXM && distYM < distXP)
+                        ball.setSpeedY(ball.getSpeedY() * -1.0);
+                    else {
+                        ball.setSpeedX(ball.getSpeedX() * -1.0);
+                        ball.setSpeedY(ball.getSpeedY() * -1.0);
+                    }
+                }
+            }
+            
+            //Colisión con los bloques destruibles
+            function collisionWithBlocks(xP, yP, xM, yM) {
+                //Variable para indicar si se ha comprobado la colisión (si existe)
+                var checkedCollision = false;
+                
+                //Bucle para recorrer el array de límites
+                for (var iB = 0; iB < totalBlocks; iB++) {
+                    //Lados de los límites
+                    var blockXM = breakableBlocks[iB].getX() - 4;
+                    var blockXP = breakableBlocks[iB].getX() + breakableBlocks[iB].getWidth() + 4;
+                    var blockYM = breakableBlocks[iB].getY() - 4;
+                    var blockYP = breakableBlocks[iB].getY() + breakableBlocks[iB].getHeight() + 4;
+                    
+                    //Condición para la colisión
+                    if(xM < blockXP && yM < blockYP && xP > blockXM && yP > blockYM){
+                        //Si se ha comprobado la colisión no se cambia el sentido
+                        if(!checkedCollision){
+                            //Cálculo de las distancias para comprobar en que parte del objeto colisiona
+                            var distXP = Math.abs((blockXP - xM));
+                            var distYP = Math.abs((blockYP - yM));
+                            var distXM = Math.abs((blockXM - xP));
+                            var distYM = Math.abs((blockYM - yP));
+                            
+                            //Cambio de dirección en función de las distancias calculadas
+                            if(distXP < distYP && distXP < distXM && distXP < distYM)
+                                ball.setSpeedX(ball.getSpeedX() * -1.0);
+                            else if(distXM < distYP && distXM < distXP && distXM < distYM)
+                                ball.setSpeedX(ball.getSpeedX() * -1.0);
+                            else if(distYP < distXP && distYP < distXM && distYP < distYM)
+                                ball.setSpeedY(ball.getSpeedY() * -1.0);
+                            else if(distYM < distYP && distYM < distXM && distYM < distXP)
+                                ball.setSpeedY(ball.getSpeedY() * -1.0);
+                            else {
+                                ball.setSpeedX(ball.getSpeedX() * -1.0);
+                                ball.setSpeedY(ball.getSpeedY() * -1.0);
+                            }
+                            
+                            //Cambio de valor de la variable de la colisión
+                            checkedCollision = true;
+                        }
+                        
+                        //Modificación de la salud del bloque
+                        breakableBlocks[iB].setHealth(breakableBlocks[iB].getHealth() - 1);
+                        
+                        //Cuando el bloque no tenga salud
+                        if(breakableBlocks[iB].getHealth() === 0){
+                            //Reproducción de sonido
+                            destroyBlockSound.pause();
+                            destroyBlockSound.play();
+                            
+                            //Limpieza del lienzo
+                            context.clearRect(breakableBlocks[iB].getX(), breakableBlocks[iB].getY(), breakableBlocks[iB].getWidth(), breakableBlocks[iB].getHeight());
+                            
+                            //Eliminar bloque del array
+                            breakableBlocks.splice(iB, 1);
+                            
+                            //Actualización puntos del jugador
+                            player.setPoints(player.getPoints() + 100);
+
+                            //Reducción del número total de bloques destruibles
+                            totalBlocks--;
+                            
+                            //Actualización del lienzo de información
+                            points.innerHTML = player.getPoints();
+                            blocks.innerHTML = totalBlocks;
+                        } else {
+                            //Reproducción de sonido
+                            hitSBSound.play();
+                        }
+                    } 
+                }
+            }
+            
+            //Reseteo de la pantalla cuando el jugador pierde una vida
+            function resetScreen() {
+                //Limpiado del lienzo
+                context.clearRect(ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                context.clearRect(player.getX(), player.getY(), player.getWidth(), player.getHeight());
+                
+                //Actualización del jugador
+                player.setX(170);
+                player.setY(553);
+                ball.setX(194);
+                ball.setY(539);
+                        
+                //Redibujado del jugador
+                loadImages(imagePlayer, "player.png", player.getX(), player.getY(), player.getWidth(), player.getHeight());
+                loadImages(imageBall, "ball.png", ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                        
+                //Activación del movimiento inicial y del manejador
+                movementStarted = false;
+                deltaTime = 1.0;
+                canvas.addEventListener("mousemove", updateBallAtStart);
+                window.addEventListener("keypress", startExecution, false);
+                    
+                //Impresión de texto en HTML
+                introAndEnd.innerHTML = "Pulsa ENTER para lanzar de nuevo la pelota";
+                difficulty.innerHTML = deltaTime;
+            }
+            
+            //Colisión con el límite inferior del mapa
+            function collisionWithVoid(yP) {
+                //Si la parte inferior de la pelota está tocando el límite inferior del mapa
+                if(yP > canvas.height){
+                    //Detención del temporizador
+                    clearInterval(frame);
+                    
+                    //Reseteo del tiempo
+                    time = 0;
+                    
+                    //Actualización de las vidas del jugador
+                    player.setLives(player.getLives() - 1);
+                    
+                    //Reproducción de sonido
+                    destroyBallSound.play();
+                    
+                    //Actualización del lienzo de información según la vida del jugador
+                    switch(player.getLives()){
+                        case 0:
+                            contextInfo.clearRect(0, 8, 30, 10);
+                            
+                            break;
+                        case 1:
+                            contextInfo.clearRect(40, 8, 30, 10);
+                            
+                            break;
+                        case 2:
+                            contextInfo.clearRect(80, 8, 30, 10);
+                            
+                            break;
+                    }
+                    
+                    //Temporizador para reiniciar la pantalla si no se ha perdido la última vida
+                    if(player.getLives() > 0)
+                        var frame2 = setTimeout(resetScreen, 1000);
+                }    
+            }
+            
+            //Cambio de la velocidad de la pelota en función del tiempo transcurrido (aumento de dificultad)
+            function changeSpeed() {
+                if(time === 1500){
+                    //Cambio del tiempo aplicado a la velocidad de la pelota
+                    deltaTime += 1.0;
+                    
+                    //Si supera el límite se reasigna a ese valor
+                    if(deltaTime > 4.0){
+                        deltaTime = 4.0;
+                    }
+                    
+                    //Actualización código HTML
+                    difficulty.innerHTML = deltaTime;
+                    
+                    //Rseteo del contador
+                    time = 0;
+                }
+            }
+            
+            //////////////////// FUNCIONES DE SALIDA DEL JUEGO ////////////////////
+            //Función cuando se gana la partida
+            function wonGame() {
+                //Cambio de la variable para indicar que acabó el juego
+                endedGame = true;
+                
+                //Detención de la ejecución del temporizador
+                clearInterval(frame);
+                
+                //Eliminación de manejadores para la posición del jugador y la pelota
+                canvas.removeEventListener("mousemove", updatePlayer);
+                canvas.removeEventListener("mousemove", updateBallAtStart);
+                
+                //Impresión del texto en la web y de una alerta
+                alert("¡Enhorabuena! ¡Has completado la demo del Arkanoid!");
+                introAndEnd.innerHTML = "Pulsa R para recargar la pagina para volver a jugar";
+                
+                //Activación del manejador del teclado
+                window.addEventListener("keypress", startExecution, false);
+            }
+            
+            //Función cuando se pierde la partida
+            function lostGame() {
+                //Cambio de la variable para indicar que acabó el juego
+                endedGame = true;
+                
+                //Detención de la ejecución del temporizador
+                clearInterval(frame);
+                
+                //Limpiado del lienzo
+                context.clearRect(ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                
+                //Eliminación de manejadores para la posición del jugador y la pelota
+                canvas.removeEventListener("mousemove", updatePlayer);
+                canvas.removeEventListener("mousemove", updateBallAtStart);
+                
+                //Impresión del texto en la web y mediante una alerta
+                alert("¡Lo siento! ¡No has podido superar la demo!");
+                introAndEnd.innerHTML = "Pulsa R para recargar la pagina para volver a jugar";
+
+                //Activación del manejador del teclado
+                window.addEventListener("keypress", startExecution, false);
+                
+            }
+            
+            //////////////////// FUNCIONES PRINCIPALES ////////////////////
+            //- Empezar ronda -//
+            function startRound() {
+                //Reproducción de sonido
+                menuMusic.pause();
+                roundMusic.play();
+                
+                //Modificación del texto HTML
+                mode1P.innerHTML = "Ronda 1";
+                mode2P.innerHTML = "";
+                infoGM.innerHTML = "";
+                
+                //Ejecución de la función después de unos segundos
+                var frame4 = setTimeout(createGame, 5000);
+            }
+            
+            //- Crear juego -//
+            function createGame(){
+                //Limpieza de texto HTML
+                mode1P.innerHTML = "";
+                
+                //Imagen de fondo (desactivado por problemas a la hora de mostrar objetos)
+                //loadImages(background, "bckgr.png", 0, 0, 400, 600);
+                //Cambio en el combinado de imágenes del contexto de manera que
+                //lo último queda por encima
+                //context.globalCompositeOperation = "destination-over";
+                
+                //Limites del mapa
+                createSceneLimits();
+                
+                //Bloques a destruir
+                createBlocks();
+                
+                //Jugador y pelota
+                createPlayer();
+                
+                //Asignación de manejadores al lienzo principal
+                canvas.addEventListener("mousemove", updatePlayer);
+                canvas.addEventListener("mousemove", updateBallAtStart);
+                window.addEventListener("keypress", startExecution, false);
+                
+                //Inicio de la información
+                initInformation();
+            }
+            
+            //- Juego -//
+            function game(){
+                //No se ha determinado el movimiento inicial
+                if(!movementStarted){
+                    //Movimiento inicial de la pelota y desactivación de la condición para solo ejecutar una vez
+                    movementStarted = startMovement();
+                    
+                    //Eliminación del manejador para automatizar el movimiento de la pelota
+                    canvas.removeEventListener("mousemove", updateBallAtStart);
+                } else {
+                    //Acualización de la posición de la pelota
+                    updateBall();
+                
+                    //Cálculo de las caras de la pelota
+                    var ballXM = ball.getX();
+                    var ballXP = ball.getX() + ball.getSize();
+                    var ballYM = ball.getY();
+                    var ballYP = ball.getY() + ball.getSize();
+                
+                    //Comprobación de colisiones de la pelota con los elementos de la escena
+                    collisionWithLimits(ballXP, ballYP, ballXM, ballYM);
+                    collisionWithPlayer(ballXP, ballYP, ballXM, ballYM);
+                    collisionWithBlocks(ballXP, ballYP, ballXM, ballYM);
+                    collisionWithVoid(ballYP);
+                
+                    //Aumento en la unidad de tiempo y cambio velocidad de la pelota
+                    time++;
+                    changeSpeed();
+                    
+                    //Salida del juego
+                    //Caso de victoria
+                    if(totalBlocks === 0)
+                        wonGame();
+                    //Si el número de vidas llega a 0
+                    if(player.getLives() === 0)
+                        lostGame();
+                }
+                
+            }
+            
+            //////////////////// OTRAS FUNCIONES ////////////////////
+            // Musica menú Principal
+            function playMenuMusic(){
+                menuMusic.play();
+            }
+            
+            //Actualización de la posición del jugador en función de la posición del mouse
+            function updatePlayer(e){
+                //Obtención del recuadro del canvas (para posiciones en él)
+                var offset = canvas.getBoundingClientRect();
+                
+                //Cálculo de la posición del ratón en el eje X
+                var i = Math.trunc(e.pageX - offset.left);
+                
+                //Si está tocando el límite izquierdo
+                if(i < sceneLimits[1].getWidth()){
+                    i = 11;
+                }
+                
+                //Si está tocando el límite derecho
+                if(i + player.getWidth() > sceneLimits[2].getX()){
+                    i = sceneLimits[2].getX() - player.getWidth();
+                }
+                
+                //Almacenamiento de las antiguas posiciones
+                var oldX = player.getX();
+                
+                //Actualización de la nueva posición
+                player.setX(i);
+                
+                 //Redibujado del jugador
+                loadImages(imagePlayer, "player.png", player.getX(), player.getY(), player.getWidth(), player.getHeight());
+                
+                //Limpiado del lienzo
+                context.clearRect(oldX, player.getY(), player.getWidth(), player.getHeight());               
+            }
+
+            //Actualización de la posición de la pelota en función de la posición del mouse antes de empezar el movimiento automático
+            function updateBallAtStart(e) {
+                //Obtención del recuadro del canvas (para posiciones en él)
+                var offset = canvas.getBoundingClientRect();
+                
+                //Cálculo de la posición X del mouse
+                var mouseX = Math.trunc(e.pageX - offset.left);
+                
+                //Cálculo de la posisición X del mouse
+                var x = mouseX + Math.trunc(player.getWidth() / 2);
+                
+                //Comprobación de la posición respecto a los límites
+                if(x < sceneLimits[1].getWidth())
+                    x = sceneLimits[1].getWidth();
+                else if((x + Math.trunc(player.getWidth() / 2)) > sceneLimits[2].getX())
+                    x = sceneLimits[2].getX() - Math.trunc(player.getWidth() / 2);
+                
+                //Limpiado del lienzo
+                context.clearRect(ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+                
+                //Actualización de la posición de la pelota
+                ball.setX(x);
+                
+                //Carga de la imagen de la pelota
+                loadImages(imageBall, "ball.png", ball.getX(), ball.getY(), ball.getSize(), ball.getSize());
+            }
+            
+            //Comienzo de la ejecución del juego
+            function startExecution(e) {
+                if(!endedGame){
+                        if(e.key === 'Enter'){
+                        //Comienzo de la ejecución
+                        frame = setInterval(game, intervalTime);
+                        //Desactivación del manejador
+                        window.removeEventListener("keypress", startExecution, false);
+                        //Limpiado del texto en HTML
+                        introAndEnd.innerHTML = "";
+                    }
+                } else {
+                    if(e.key === 'r')
+                        //Función para recargar la página
+                        location.reload();
+                }
+            }
+            
+            //Función para seleccionar el modo de juego que se desee
+            function selectGameMode(e) {
+                switch(e.key){
+                    case "w":
+                        //Impresión de texto
+                        mode1P.innerHTML = "> 1 jugador";
+                        mode2P.innerHTML = "2 jugadores";
+                        
+                        //Cambio de booleanos
+                        player1 = true;
+                        player2 = false;
+                        
+                        break;
+                    case "s":
+                        //Impresión de texto
+                        mode1P.innerHTML = "1 jugador";
+                        mode2P.innerHTML = "> 2 jugadores";
+                        
+                        //Cambio de booleanos
+                        player1 = false;
+                        player2 = true;
+                        
+                        break;
+                }
+            }
+            
+            //Función para ejecutar el modo de juego seleccionado
+            function executeGameMode(e) {
+                //Si se ha pulsado Enter
+                if(e.key === 'Enter'){
+                    //Jugador 1 seleccionado
+                    if(player1){
+                        //Llamada a la función después de unos segundos
+                        var frame3 = setTimeout(startRound, 1000);
+                        
+                        //Desactivación de los manejadores
+                        window.removeEventListener("keypress", executeGameMode, false);
+                        window.removeEventListener("keypress", selectGameMode, false);
+                    //Jugador 2 seleccionado
+                    } else if (player2){
+                        //Alerta en el navegador indicando que ese modo no se puede jugar
+                        alert("El modo para 2 jugadores aún no está implementado.");
+                    }
+                }
+            }
+            
+            //Inserción del manejador al lienzo para poder ejecutar la función cuando se active el evento
+            window.addEventListener("keypress", selectGameMode, false);
+            window.addEventListener("keypress", executeGameMode, false);
+            
+            //////////////////// LLAMADA A FUNCIONES ////////////////////
+            playMenuMusic();
+        </script>
+    </body>
+</html>
