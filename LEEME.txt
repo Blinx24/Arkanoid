@@ -1,7 +1,0 @@
-*** INFORMACIÓN ACERCA DEL JUEGO ***
-Se recomienda altamente ejecutar el juego en Edge por los siguientes motivos:
-- En los navegadores Chrome y Firefox los sprites presentan un parpadeo. Sin embargo,
-en Edge, se muestran correctamente.
-
-- Chrome y Firefox no reproducen la canción del menú principal, mientras que
-Edge si la reproduce.
