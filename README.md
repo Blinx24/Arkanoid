@@ -4,12 +4,12 @@
 Proyecto del mítico juego **Arkanoid** realizado en HTML y JavaScript como 3ª práctica entregable de *Fundamentos de la tecnología de los videojuegos*, asignatura de 2º curso de *Diseño y desarrollo de videojuegos*.
 
 ## Instalación
-Para la instalación de este proyecto:
+No requiere ninguna instalación compleja. Simplemente:
 1. Descargar la versión 1.0 del repositorio.
+2. Descomprimir el fichero .zip obtenido.
 
 ## Uso
-1. Descomprimir el .zip obtenido.
-2. Abrir el archivo *index.html* contenido dentro de este repositorio. Este debe ser abierto desde Edge (se ha observado un mejor rendimiento que en otros navegadores).
+1. Abrir el archivo *index.html* contenido dentro de la carpeta extraída. Este debe ser abierto desde Edge (se ha observado un mejor rendimiento que en otros navegadores).
 
 ## Créditos
 Este proyecto ha sido realizado por:
