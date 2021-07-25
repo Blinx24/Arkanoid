@@ -5,10 +5,11 @@ Proyecto del mítico juego **Arkanoid** realizado en HTML y JavaScript como 3ª 
 
 ## Instalación
 Para la instalación de este proyecto:
-1. Descargar el contenido del repositorio.
+1. Descargar la versión 1.0 del repositorio.
 
 ## Uso
-1. Abrir el archivo *index.html* contenido dentro de este repositorio. Este debe ser abierto desde Edge (se ha observado un mejor rendimiento que en otros navegadores).
+1. Descomprimir el .zip obtenido.
+2. Abrir el archivo *index.html* contenido dentro de este repositorio. Este debe ser abierto desde Edge (se ha observado un mejor rendimiento que en otros navegadores).
 
 ## Créditos
 Este proyecto ha sido realizado por:
